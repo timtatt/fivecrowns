@@ -14,6 +14,10 @@ type Card struct {
 	Suite  rune
 }
 
+var (
+	CardJoker = Card{Joker: true}
+)
+
 // encode the card into a string eg. "*" or "10-R"
 func (c Card) Encode() string {
 	if c.Joker {
@@ -26,9 +30,7 @@ func (c Card) Encode() string {
 // decode the card into a struct
 func DecodeCard(c string) (Card, error) {
 	if c == "*" {
-		return Card{
-			Joker: true,
-		}, nil
+		return CardJoker, nil
 	}
 
 	parts := strings.SplitN(string(c), "-", 2)
@@ -70,6 +72,17 @@ func EncodeSequence(cards []Card) string {
 	}
 
 	return out.String()
+}
+
+func EncodeSequences(seqs [][]Card) [][]string {
+
+	out := make([][]string, len(seqs))
+
+	for i, seq := range seqs {
+		out[i] = EncodeCards(seq)
+	}
+
+	return out
 }
 
 // convert the sequence into a list of CardCodes

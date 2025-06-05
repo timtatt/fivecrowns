@@ -112,7 +112,9 @@ $(function () {
 
     if (res.sequences) {
       for (const seq of res.sequences) {
-        score += scoreSequence(seq);
+        if (seq.length < 3) {
+          score += scoreSequence(seq);
+        }
 
         sequences += `<li class="list-group-item"><div class="hand">${renderCards(seq, { size: "sm" })}</div></li>`;
       }

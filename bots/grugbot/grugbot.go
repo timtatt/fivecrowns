@@ -26,9 +26,20 @@ func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 		return bots.ScoreResponse{}, fmt.Errorf("unable to decode cards: %w", err)
 	}
 
-	FindSequences(hand)
+	// sort the cards by suite and number
+	slices.SortFunc(hand, bots.CompareCard)
 
-	return bots.ScoreResponse{}, errors.New("not implemented")
+	// find sequences in the hand, this will return sequences of 2 or more
+	seqs := FindSequences(hand)
+
+	// determine any cards which are used twice
+	seqs = FilterSequences(hand, seqs)
+
+	return bots.ScoreResponse{
+		Action:    req.Action,
+		Flop:      false,
+		Sequences: bots.EncodeSequences(seqs),
+	}, nil
 }
 
 func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
@@ -39,20 +50,20 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 	return bots.DiscardResponse{}, errors.New("not implemented")
 }
 
-// takes a list of cards
-func FindSequences(hand []bots.Card) {
-
-	// sort the cards by suite and number
-	slices.SortFunc(hand, bots.CompareCard)
-
-	// put all the cards into a map
+// takes a list of cards and returns a map with the counts of each card
+func CardCounts(hand []bots.Card) map[bots.Card]int {
 	cardCounts := make(map[bots.Card]int)
 
 	for _, card := range hand {
 		cardCounts[card] += 1
 	}
 
-	slog.Info("card counts in hand", "hand", cardCounts)
+	return cardCounts
+}
+
+// takes a sorted list of cards and returns a list of possible sequences
+// note: a single card may be used multiple times
+func FindSequences(hand []bots.Card) [][]bots.Card {
 
 	seqs := make([][]bots.Card, 0)
 
@@ -80,7 +91,7 @@ func FindSequences(hand []bots.Card) {
 			// cards are not in a run
 
 			// save the sequence if it qualifies
-			if len(curSeq) >= 3 {
+			if len(curSeq) >= 2 {
 				log.Println(bots.EncodeSequence(curSeq))
 				seqs = append(seqs, curSeq)
 			}
@@ -91,9 +102,12 @@ func FindSequences(hand []bots.Card) {
 	}
 
 	// ensure we don't leave a curSeq hanging
-	if len(curSeq) >= 3 {
+	if len(curSeq) >= 2 {
 		seqs = append(seqs, curSeq)
 	}
+
+	cardCounts := CardCounts(hand)
+	slog.Info("card counts in hand", "hand", cardCounts)
 
 	// check the cards for sets
 	for number := 3; number < 13; number++ {
@@ -114,9 +128,84 @@ func FindSequences(hand []bots.Card) {
 
 		}
 
-		if len(curSeq) >= 3 {
+		if len(curSeq) >= 2 {
 			seqs = append(seqs, curSeq)
 		}
 	}
 
+	return seqs
+}
+
+// takes a hand and a list of sequences
+// determines if any card is being used more than it should be
+// if so, will chose the sequence with the highest score
+// output will include any cards which dont fit within a sequence as a single-carded sequence
+func FilterSequences(hand []bots.Card, seqs [][]bots.Card) [][]bots.Card {
+
+	// score all of the sequences
+
+	slices.SortFunc(seqs, func(a, b []bots.Card) int {
+
+		if len(a) < 3 && len(b) >= 3 {
+			return 1
+		} else if len(a) >= 3 && len(b) < 3 {
+			return -1
+		} else {
+			return bots.ScoreSequence(b) - bots.ScoreSequence(a)
+		}
+	})
+
+	slog.Info("sorting by sequence scores", "seqs", bots.EncodeSequences(seqs))
+
+	filteredSeqs := make([][]bots.Card, 0)
+
+	cardCounts := CardCounts(hand)
+
+	for _, seq := range seqs {
+		// optimisation available: don't bother checking for card usage for first sequence
+
+		valid := true
+
+		// check all the cards are available
+		for _, card := range seq {
+
+			// TODO: edge case: same card used twice
+			if cardCounts[card] < 1 {
+				valid = false
+				break
+			}
+
+		}
+
+		if !valid {
+			continue
+		}
+
+		// add jokers to the sequence if the sequence is < 3
+		gap := 3 - len(seq)
+		if gap > 0 && cardCounts[bots.CardJoker] >= gap {
+			for range gap {
+				log.Println("add a joker to " + bots.EncodeSequence(seq))
+				seq = append(seq, bots.CardJoker)
+			}
+
+			cardCounts[bots.CardJoker] -= gap
+		}
+
+		filteredSeqs = append(filteredSeqs, seq)
+
+		// decrement remaining cards which have been used
+		for _, card := range seq {
+			cardCounts[card] -= 1
+		}
+	}
+
+	// add the remaining cards which haven't been used
+	for card, count := range cardCounts {
+		if count > 0 {
+			filteredSeqs = append(filteredSeqs, []bots.Card{card})
+		}
+	}
+
+	return filteredSeqs
 }
