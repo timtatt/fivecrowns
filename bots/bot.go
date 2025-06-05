@@ -14,16 +14,17 @@ var (
 	SuiteYellow rune = 'Y'
 	SuiteGreen  rune = 'G'
 	SuiteBlack  rune = 'X'
+	Suites           = []rune{SuiteBlue, SuiteGreen, SuiteBlack, SuiteRed, SuiteYellow}
 )
 
 type BotRequest struct {
+	Discard     []string `json:"discard"`
+	Hand        []string `json:"hand"`
 	Action      Action   `json:"action"`
+	NewestCard  string   `json:"newestCard"`
 	PlayerCount int      `json:"playerCount"`
 	Round       int      `json:"round"`
 	LastTurn    bool     `json:"lastTurn"`
-	NewestCard  string   `json:"newestCard"`
-	Hand        []string `json:"hand"`
-	Discard     []string `json:"discard"`
 }
 
 type Action string
@@ -47,14 +48,14 @@ type DrawResponse struct {
 }
 
 type DiscardResponse struct {
+	Sequences [][]string `json:"sequences"`
 	Action    Action     `json:"action"`
 	Card      string     `json:"card"`
 	Flop      bool       `json:"flop"`
-	Sequences [][]string `json:"sequences"`
 }
 
 type ScoreResponse struct {
+	Sequences [][]string `json:"sequences"`
 	Action    Action     `json:"action"`
 	Flop      bool       `json:"flop"`
-	Sequences [][]string `json:"sequences"`
 }

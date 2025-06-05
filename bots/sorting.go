@@ -1,14 +1,5 @@
 package bots
 
-import (
-	"slices"
-)
-
-// sorts the current sequence in-place
-func (s Sequence) Sort() {
-	slices.SortFunc(s, CompareCard)
-}
-
 // compares two cards
 func CompareCard(c1, c2 Card) int {
 	if c1 == c2 {

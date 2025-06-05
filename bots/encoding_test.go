@@ -40,32 +40,32 @@ func TestCardEncoding(t *testing.T) {
 
 func TestSequenceEncode(t *testing.T) {
 
-	seq := Sequence{
-		Card{
+	seq := []Card{
+		{
 			Joker: true,
 		},
-		Card{
+		{
 			Number: 10,
 			Suite:  'R',
 		},
 	}
 
-	assert.Equal(t, "*:10-R", seq.Encode())
+	assert.Equal(t, "*:10-R", EncodeSequence(seq))
 
 }
 
 func TestSequenceEncodeCards(t *testing.T) {
-	seq := Sequence{
-		Card{
+	seq := []Card{
+		{
 			Joker: true,
 		},
-		Card{
+		{
 			Number: 10,
 			Suite:  'R',
 		},
 	}
 
-	assert.Equal(t, []string{"*", "10-R"}, seq.EncodeCards())
+	assert.Equal(t, []string{"*", "10-R"}, EncodeCards(seq))
 }
 
 func TestSequenceDecode(t *testing.T) {
@@ -76,7 +76,7 @@ func TestSequenceDecode(t *testing.T) {
 
 	require.NoError(t, err)
 
-	assert.Equal(t, seq, Sequence{
+	assert.Equal(t, seq, []Card{
 		{
 			Joker: true,
 		},

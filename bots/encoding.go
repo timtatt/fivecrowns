@@ -56,14 +56,12 @@ func DecodeCard(c string) (Card, error) {
 	}, nil
 }
 
-type Sequence []Card
-
 // encode the sequence into a string eg. 10-R:8-Y:*:10-X
-func (s Sequence) Encode() string {
+func EncodeSequence(cards []Card) string {
 
 	var out strings.Builder
 
-	for i, card := range s {
+	for i, card := range cards {
 		if i != 0 {
 			out.WriteString(":")
 		}
@@ -76,11 +74,11 @@ func (s Sequence) Encode() string {
 
 // convert the sequence into a list of CardCodes
 // eg. ["10-R", "8-Y", "*"]
-func (s Sequence) EncodeCards() []string {
+func EncodeCards(cards []Card) []string {
 
-	sequenceCode := make([]string, len(s))
+	sequenceCode := make([]string, len(cards))
 
-	for i, card := range s {
+	for i, card := range cards {
 		sequenceCode[i] = card.Encode()
 	}
 
@@ -88,7 +86,7 @@ func (s Sequence) EncodeCards() []string {
 }
 
 // takes encoded sequence eg. 10-R:*:8-Y and decodes into a list of Cards
-func DecodeSequence(s string) (Sequence, error) {
+func DecodeSequence(s string) ([]Card, error) {
 
 	cardCodes := strings.Split(s, ":")
 
@@ -97,6 +95,24 @@ func DecodeSequence(s string) (Sequence, error) {
 	var errs error
 	for i, code := range cardCodes {
 		card, err := DecodeCard(code)
+
+		if err != nil {
+			errs = errors.Join(errs, err)
+			continue
+		}
+
+		seq[i] = card
+	}
+
+	return seq, errs
+}
+
+func DecodeCards(cards []string) ([]Card, error) {
+	seq := make([]Card, len(cards))
+
+	var errs error
+	for i, c := range cards {
+		card, err := DecodeCard(c)
 
 		if err != nil {
 			errs = errors.Join(errs, err)

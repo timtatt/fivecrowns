@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,7 +79,7 @@ func TestCompareCard(t *testing.T) {
 
 func TestSortSequence(t *testing.T) {
 
-	seq := Sequence{
+	seq := []Card{
 		{
 			Number: 9,
 			Suite:  'Y',
@@ -96,8 +97,8 @@ func TestSortSequence(t *testing.T) {
 		},
 	}
 
-	seq.Sort()
+	slices.SortFunc(seq, CompareCard)
 
-	assert.Equal(t, "8-R:9-R:9-Y:*", seq.Encode())
+	assert.Equal(t, "8-R:9-R:9-Y:*", EncodeSequence(seq))
 
 }
