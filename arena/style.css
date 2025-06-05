@@ -1,0 +1,177 @@
+body {
+	font-family: sans-serif;
+}
+
+.hand {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.hand-sm {
+	margin-bottom: 10px;
+	gap: 5px;
+}
+
+.pcard {
+	background-color: transparent;
+	flex: 0 0 auto;
+	border-radius: 10px;
+	border-color: #000;
+	border-style: solid;
+	border-width: 4px;
+	font-weight: bold;
+	cursor: pointer;
+	width: 64px;
+	text-align: center;
+	box-sizing: border-box;
+	background-color: #1b1c1d;
+	padding: 6px 0;
+	font-size: 30px;
+	transition: transform 0.1s;
+}
+
+.pcard:before {
+	display: block;
+}
+
+.pcard:after {
+	font-size: 24px;
+	line-height: 24px;
+	display: block;
+	box-sizing: content-box;
+}
+
+.pcard-sm {
+	width: 45px;
+	border-radius: 8px;
+	font-size: 20px;
+	border-width: 3px;
+}
+
+.pcard-sm:after {
+	font-size: 16px;
+	line-height: 16px;
+}
+
+.pcard-xs {
+	width: 30px;
+	border-radius: 4px;
+	font-size: 12px;
+	border-width: 2px;
+}
+
+.pcard-xs:after {
+	font-size: 8px;
+	line-height: 8px;
+}
+
+.pcard:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.pcard:hover {
+	transform: translateY(-3px);
+}
+
+.pcard-joker {
+	border-color: purple;
+}
+
+.pcard-r {
+	color: red;
+	border-color: red;
+}
+
+.pcard-b {
+	color: blue;
+	border-color: blue;
+}
+
+.pcard-y {
+	color: gold;
+	border-color: gold;
+}
+
+.pcard-x {
+	color: #F5F5F5;
+	border-color: #F5F5F5;
+}
+
+.pcard-g {
+	color: green;
+	border-color: green;
+}
+
+
+.pcard-3:before {
+	content: '3';
+}
+
+.pcard-4:before {
+	content: '4';
+}
+
+.pcard-5:before {
+	content: '5';
+}
+
+.pcard-6:before {
+	content: '6';
+}
+
+.pcard-7:before {
+	content: '7';
+}
+
+.pcard-8:before {
+	content: '8';
+}
+
+.pcard-9:before {
+	content: '9';
+}
+
+.pcard-10:before {
+	content: '10';
+}
+
+.pcard-11:before {
+	content: 'J';
+}
+
+.pcard-12:before {
+	content: 'Q';
+}
+
+.pcard-13:before {
+	content: 'K'
+}
+
+
+.pcard-r:after {
+	content: '\2665';
+}
+
+.pcard-x:after {
+	content: '\2660';
+}
+
+.pcard-y:after {
+	content: '\2B51';
+}
+
+.pcard-g:after {
+	content: '\2663';
+}
+
+.pcard-b:after {
+	content: '\2666';
+}
+
+.pcard-joker:before {
+	line-height: 70px;
+	content: '\1F921'
+}
