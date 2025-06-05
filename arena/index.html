@@ -18,6 +18,7 @@
       integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
       crossorigin="anonymous"
     ></script>
+    <title>Five Crowns Bot Arena</title>
   </head>
 
   <body data-bs-theme="dark">
@@ -30,17 +31,18 @@
     <div class="container">
       <div class="row">
         <div class="col col-8">
-          <div class="hand" id="hand">
-            <div class="pcard pcard-b pcard-10"></div>
-            <div class="pcard pcard-b pcard-10"></div>
-            <div class="pcard pcard-b pcard-10"></div>
-            <div class="pcard pcard-b pcard-10"></div>
-            <div class="pcard pcard-b pcard-10"></div>
-            <div class="pcard pcard-b pcard-10"></div>
-            <div class="pcard pcard-b pcard-10"></div>
-          </div>
+          <div class="hand mb-4" id="hand"></div>
           <div class="row">
-            <div class="col">
+            <div class="col col-auto">
+              <button
+                class="btn d-block btn-outline-secondary"
+                type="button"
+                id="shuffle"
+              >
+                Shuffle
+              </button>
+            </div>
+            <div class="col col-3">
               <div class="input-group mb-3">
                 <span class="input-group-text" id="basic-addon1">Round</span>
                 <input
@@ -73,7 +75,8 @@
           <div class="row mb-3">
             <label class="col-sm-3 col-form-label">Action</label>
             <div class="col-sm-9">
-              <select class="form-select">
+              <select class="form-select" id="action">
+                <option value="score">Score</option>
                 <option value="draw">Draw</option>
                 <option value="discard">Discard</option>
               </select>
@@ -91,15 +94,7 @@
                 id="discard"
                 placeholder="Sequence for discard pile e.g 10-R:11-B"
               />
-              <div class="hand hand-sm mt-2" id="discardPreview">
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-                <div class="pcard pcard-xs pcard-b pcard-10"></div>
-              </div>
+              <div class="hand hand-sm mt-2" id="discardPreview"></div>
             </div>
           </div>
           <div class="text-center">
@@ -110,48 +105,30 @@
         </div>
         <div class="col">
           <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Outcome from Bot</h5>
-              <div class="hand">
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-              </div>
-              <div class="hand">
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-              </div>
-              <div class="hand">
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-              </div>
-              <div class="hand">
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                <div class="pcard pcard-sm pcard-b pcard-10"></div>
-              </div>
+            <div class="card-header">
+              <h5 class="card-title">Bot Response</h5>
+              <h6
+                id="botResponseSummary"
+                class="card-subtitle text-body-secondary"
+              >
+                Score: 20, Discarded: 10-R
+              </h6>
             </div>
+            <ul class="list-group list-group-flush" id="botResponseSequences">
+              <li class="list-group-item">
+                <div class="hand">
+                  <div class="pcard pcard-sm pcard-b pcard-10"></div>
+                  <div class="pcard pcard-sm pcard-b pcard-10"></div>
+                  <div class="pcard pcard-sm pcard-b pcard-10"></div>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="allCards" class="p-4 hand">
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-      <div class="pcard pcard-b pcard-10"></div>
-    </div>
+    <div id="allCards" class="p-4 hand"></div>
 
     <script src="engine.js"></script>
     <script src="script.js"></script>

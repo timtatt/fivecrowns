@@ -7,6 +7,12 @@ This is a repo to play around with building engines to play the rummy-style game
 
 The arena is a basic html page to test out bots
 
+To run the arena
+```
+go run .
+open http://localhost:3000/arena
+```
+
 ## Spec
 
 The interface for a five crowns bot is one of:
@@ -23,7 +29,7 @@ A turn is made up of 2 requests
 
 ```js
 {
-    "action": "draw", // draw, discard
+    "action": "draw", // draw, discard, score
     "playerCount": 4,
     "round": 3, // 3-13, also indicates the number of cards and which one is wild
     "lastTurn": true, // when a player finishes, every other player gets 1 more turn. this indicates if it is the last turn
@@ -37,18 +43,21 @@ A turn is made up of 2 requests
 
 Below are examples of valid responses to each action
 
+Draw is the first step of a turn where the bot choose whether to take the top card of the deck OR take the top card from discard pile
 ```js
 {
-    "action": "draw", // draw, discard
+    "action": "draw", // draw, discard, score
     "stack": "deck", // deck, discard
 }
 ```
 
 
+Discard is the second part of a turn where the bot will arrange the cards into sequences and discard a card to finish their turn
 ```js
 {
-    "action": "discard", // draw, discard
+    "action": "discard", // draw, discard, score
     "card": "10-R", // which card has been discarded
+    "flop": false, // indicates that the sequences are sufficient to 'flop' (i.e. reveal hand and start final turns for other players)
     "sequences": [
         ["9-R", "10-R", "11-R"],
         ["9-Y"]
@@ -56,3 +65,15 @@ Below are examples of valid responses to each action
 }
 ```
 
+
+Score is an action which can be used to test the engine. It is the same as 'discard' but doesn't try to discard a card.
+```js
+{
+    "action": "score", // draw, discard, score
+    "flop": false, // indicates that the sequences are sufficient to 'flop' (i.e. reveal hand and start final turns for other players)
+    "sequences": [
+        ["9-R", "10-R", "11-R"],
+        ["9-Y"]
+    ], // list of valid sequences computed by the bot
+}
+```

@@ -29,9 +29,27 @@ function decodeCard(card) {
   const [number, suite] = card.split("-");
   return {
     joker: false,
-    number,
+    number: parseInt(number),
     suite,
   };
+}
+
+function scoreSequence(sequence) {
+  let score = 0;
+
+  console.log("scoring sequence", sequence);
+  for (const card of sequence) {
+    if (card === "*") {
+      score += 25;
+      continue;
+    }
+
+    const cardDec = decodeCard(card);
+
+    score += cardDec.number;
+  }
+
+  return score;
 }
 
 function shuffleDeck(cards, seed) {

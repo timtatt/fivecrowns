@@ -6,11 +6,9 @@ body {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
-	margin-bottom: 20px;
 }
 
 .hand-sm {
-	margin-bottom: 10px;
 	gap: 5px;
 }
 
@@ -18,7 +16,6 @@ body {
 	background-color: transparent;
 	flex: 0 0 auto;
 	border-radius: 10px;
-	border-color: #000;
 	border-style: solid;
 	border-width: 4px;
 	font-weight: bold;
@@ -26,7 +23,7 @@ body {
 	width: 64px;
 	text-align: center;
 	box-sizing: border-box;
-	background-color: #1b1c1d;
+	background-color: #111213;
 	padding: 6px 0;
 	font-size: 30px;
 	transition: transform 0.1s;
@@ -77,32 +74,32 @@ body {
 }
 
 .pcard-joker {
-	border-color: purple;
+	border-color: #730c73;
 }
 
 .pcard-r {
-	color: red;
-	border-color: red;
+	color: #a11616;
+	border-color: #a11616;
 }
 
 .pcard-b {
-	color: blue;
-	border-color: blue;
+	color: #1919aa;
+	border-color: #1919aa;
 }
 
 .pcard-y {
-	color: gold;
-	border-color: gold;
+	color: #ccb22a;
+	border-color: #ccb22a;
 }
 
 .pcard-x {
-	color: #F5F5F5;
-	border-color: #F5F5F5;
+	color: #a39999;
+	border-color: #a39999;
 }
 
 .pcard-g {
-	color: green;
-	border-color: green;
+	color: #0c730c;
+	border-color: #0c730c;
 }
 
 
@@ -174,4 +171,8 @@ body {
 .pcard-joker:before {
 	line-height: 70px;
 	content: '\1F921'
+}
+
+.pcard-sm.pcard-joker:before {
+	line-height: 46px;
 }
