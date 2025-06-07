@@ -1,4 +1,4 @@
-package bots
+package game
 
 import (
 	"slices"

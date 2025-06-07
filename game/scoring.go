@@ -1,4 +1,4 @@
-package bots
+package game
 
 func ScoreSequence(cards []Card) int {
 	score := 0

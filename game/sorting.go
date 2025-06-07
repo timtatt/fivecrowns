@@ -1,4 +1,4 @@
-package bots
+package game
 
 // compares two cards
 func CompareCard(c1, c2 Card) int {

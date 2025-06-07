@@ -1,4 +1,4 @@
-package bots
+package game
 
 import (
 	"errors"
@@ -6,16 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-)
-
-type Card struct {
-	Joker  bool
-	Number int
-	Suite  rune
-}
-
-var (
-	CardJoker = Card{Joker: true}
 )
 
 // encode the card into a string eg. "*" or "10-R"

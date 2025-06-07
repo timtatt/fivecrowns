@@ -6,17 +6,6 @@ type Bot interface {
 	Score(req BotRequest) (ScoreResponse, error)
 }
 
-type Suite rune
-
-var (
-	SuiteBlue   rune = 'B'
-	SuiteRed    rune = 'R'
-	SuiteYellow rune = 'Y'
-	SuiteGreen  rune = 'G'
-	SuiteBlack  rune = 'X'
-	Suites           = []rune{SuiteBlue, SuiteGreen, SuiteBlack, SuiteRed, SuiteYellow}
-)
-
 type BotRequest struct {
 	Discard     []string `json:"discard"`
 	Hand        []string `json:"hand"`
