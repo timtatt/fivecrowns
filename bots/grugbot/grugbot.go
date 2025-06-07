@@ -34,7 +34,7 @@ func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 	seqs := FindSequences(hand)
 
 	// determine any cards which are used twice
-	seqs = FilterSequences(hand, seqs)
+	seqs = FilterSequences(req.Round, hand, seqs)
 
 	return bots.ScoreResponse{
 		Action:    req.Action,
@@ -141,7 +141,7 @@ func FindSequences(hand []game.Card) [][]game.Card {
 // determines if any card is being used more than it should be
 // if so, will chose the sequence with the highest score
 // output will include any cards which dont fit within a sequence as a single-carded sequence
-func FilterSequences(hand []game.Card, seqs [][]game.Card) [][]game.Card {
+func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.Card {
 
 	// score all of the sequences
 
@@ -186,13 +186,19 @@ func FilterSequences(hand []game.Card, seqs [][]game.Card) [][]game.Card {
 
 		// add jokers to the sequence if the sequence is < 3
 		gap := 3 - len(seq)
-		if gap > 0 && cardCounts[game.CardJoker] >= gap {
+		if gap > 0 && wildCount(cardCounts, round) >= gap {
 			for range gap {
-				log.Println("add a joker to " + game.EncodeSequence(seq))
-				seq = append(seq, game.CardJoker)
-			}
+				log.Println("add a wild to " + game.EncodeSequence(seq))
 
-			cardCounts[game.CardJoker] -= gap
+				// fetch an available wild card
+				// decrement the wildcard after usage
+
+				// ignoring the err, we know there will be a wild available here
+				wc, _ := getWild(cardCounts, round)
+				seq = append(seq, wc)
+
+				cardCounts[wc] -= gap
+			}
 		}
 
 		filteredSeqs = append(filteredSeqs, seq)
@@ -221,6 +227,34 @@ func getWild(cardCounts map[game.Card]int, round int) (game.Card, error) {
 		return game.CardJoker, nil
 	}
 
-	return game.Card{}, errors.New("no wilds found")
+	for _, s := range game.Suites {
+		c := game.Card{
+			Number: round,
+			Suite:  s,
+		}
 
+		if cardCounts[c] > 0 {
+			return c, nil
+		}
+	}
+
+	return game.Card{}, errors.New("no wilds found")
+}
+
+func wildCount(cardCounts map[game.Card]int, round int) int {
+
+	count := 0
+
+	count += cardCounts[game.CardJoker]
+
+	for _, s := range game.Suites {
+		c := game.Card{
+			Number: round,
+			Suite:  s,
+		}
+
+		count += cardCounts[c]
+	}
+
+	return count
 }

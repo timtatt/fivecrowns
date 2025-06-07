@@ -64,6 +64,17 @@ func EncodeSequence(cards []Card) string {
 	return out.String()
 }
 
+func FlattenSequences(seqs [][]string) []string {
+
+	flattenedSeqs := make([]string, len(seqs))
+
+	for i, seq := range seqs {
+		flattenedSeqs[i] = strings.Join(seq, ":")
+	}
+
+	return flattenedSeqs
+}
+
 func EncodeSequences(seqs [][]Card) [][]string {
 
 	out := make([][]string, len(seqs))
