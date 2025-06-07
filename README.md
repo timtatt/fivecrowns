@@ -77,3 +77,29 @@ Score is an action which can be used to test the engine. It is the same as 'disc
     ], // list of valid sequences computed by the bot
 }
 ```
+
+
+## Bots
+
+### Smooth Brain Bot
+- Cannot build sequences
+- Randomly picked a stack to draw from
+- Randomly picks a card to discard
+
+### Grug Brain Bot
+- Can build sequences
+- Priotises highest scoring sequences
+- Uses wilds to rid of most # of cards
+
+
+### Wrinkle Brain Bot
+- Builds sequences
+- Can split sequences to maximise card usage
+- Prefers sets to runs, especially in rounds 4, 5, 7, 8
+- Uses wilds to maximise used cards
+
+### Galaxy Brain Bot
+- Reads the discard pile and uses probability to decide on best actions
+- Can go into damage control mode when the turn count is high depending on number of players and curent round i.e. when there have been many turns, higher probability that someone will flop soon
+- Observes which cards opponent to left is picking up; will avoid handing them cards
+- Uses AI to trash talk opponents based on the cards they have discarded

@@ -161,6 +161,8 @@ func FilterSequences(hand []bots.Card, seqs [][]bots.Card) [][]bots.Card {
 
 	cardCounts := CardCounts(hand)
 
+	// TODO: treat round-specific card as a joker
+
 	for _, seq := range seqs {
 		// optimisation available: don't bother checking for card usage for first sequence
 
@@ -199,6 +201,8 @@ func FilterSequences(hand []bots.Card, seqs [][]bots.Card) [][]bots.Card {
 			cardCounts[card] -= 1
 		}
 	}
+
+	// TODO: if a joker is remaining, tack onto an existing sequence
 
 	// add the remaining cards which haven't been used
 	for card, count := range cardCounts {

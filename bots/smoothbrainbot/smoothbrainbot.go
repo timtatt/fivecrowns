@@ -1,4 +1,4 @@
-package stupidbot
+package smoothbrainbot
 
 import (
 	"math/rand"
@@ -6,14 +6,14 @@ import (
 	"github.com/timtatt/fivecrowns/bots"
 )
 
-type stupidBot struct{}
+type smoothBrainBot struct{}
 
-func NewStupidBot() bots.Bot {
-	return &stupidBot{}
+func NewSmoothBrainBot() bots.Bot {
+	return &smoothBrainBot{}
 }
 
 // StupidBot randomly picks a stack to draw from
-func (*stupidBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
+func (*smoothBrainBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 
 	r := rand.Intn(2)
 	stack := bots.StackDeck
@@ -29,7 +29,7 @@ func (*stupidBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 }
 
 // StupidBot is unable to make a sequence and will discard a card at random
-func (s *stupidBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
+func (s *smoothBrainBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 	discardIdx := rand.Intn(len(req.Hand))
 
 	sequences := make([][]string, 0, len(req.Hand))
@@ -47,7 +47,7 @@ func (s *stupidBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 	}, nil
 }
 
-func (s *stupidBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
+func (s *smoothBrainBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 
 	sequences := make([][]string, 0, len(req.Hand))
 
