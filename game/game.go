@@ -24,3 +24,34 @@ var (
 func (c Card) IsWild(round int) bool {
 	return c.Joker || c.Number == round
 }
+
+type SequenceType string
+
+var (
+	SequenceTypeRun    SequenceType = "run"
+	SequenceTypeSet    SequenceType = "set"
+	SequenceTypeEither SequenceType = "either"
+)
+
+// determine if the sequence is a set
+// ignores wild cards
+func GetSequenceType(seq []Card, round int) SequenceType {
+	c1 := -1
+
+	for i := 0; i < len(seq); i++ {
+
+		if seq[i].IsWild(round) {
+			continue
+		}
+
+		if c1 == -1 {
+			c1 = i
+		} else if seq[c1].Number == seq[i].Number {
+			return SequenceTypeSet
+		} else {
+			return SequenceTypeRun
+		}
+	}
+
+	return SequenceTypeEither
+}

@@ -3,7 +3,6 @@ package grugbot
 import (
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"slices"
 
@@ -30,10 +29,11 @@ func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 	// sort the cards by suite and number
 	slices.SortFunc(hand, game.CompareCard)
 
-	// find sequences in the hand, this will return sequences of 2 or more
-	seqs := FindSequences(hand)
+	// find all possible sequences in the hand
+	seqs := FindSequences(req.Round, hand)
 
-	// determine any cards which are used twice
+	// filter out sequences if they have cards that have been used twiced
+	// use the wilds to build more sequences
 	seqs = FilterSequences(req.Round, hand, seqs)
 
 	return bots.ScoreResponse{
@@ -64,7 +64,7 @@ func CardCounts(hand []game.Card) map[game.Card]int {
 
 // takes a sorted list of cards and returns a list of possible sequences
 // note: a single card may be used multiple times
-func FindSequences(hand []game.Card) [][]game.Card {
+func FindSequences(round int, hand []game.Card) [][]game.Card {
 
 	seqs := make([][]game.Card, 0)
 
@@ -81,7 +81,7 @@ func FindSequences(hand []game.Card) [][]game.Card {
 
 		// if we are dealing with jokers, we can ignore them
 		// if the current card and previous card in sequence is the same, we can ignore it
-		if c.Joker || c == pc {
+		if c.IsWild(round) || c == pc {
 			continue
 		}
 
@@ -93,7 +93,7 @@ func FindSequences(hand []game.Card) [][]game.Card {
 
 			// save the sequence if it qualifies
 			if len(curSeq) >= 2 {
-				log.Println(game.EncodeSequence(curSeq))
+				slog.Info("adding sequence", "seq", game.EncodeSequence(curSeq))
 				seqs = append(seqs, curSeq)
 			}
 
@@ -105,6 +105,7 @@ func FindSequences(hand []game.Card) [][]game.Card {
 	// ensure we don't leave a curSeq hanging
 	if len(curSeq) >= 2 {
 		seqs = append(seqs, curSeq)
+		slog.Info("adding sequence", "seq", game.EncodeSequence(curSeq))
 	}
 
 	cardCounts := CardCounts(hand)
@@ -112,6 +113,11 @@ func FindSequences(hand []game.Card) [][]game.Card {
 
 	// check the cards for sets
 	for number := 3; number < 13; number++ {
+
+		// do not get a collection set of wilds
+		if number == round {
+			continue
+		}
 
 		curSeq := make([]game.Card, 0)
 
@@ -130,8 +136,19 @@ func FindSequences(hand []game.Card) [][]game.Card {
 		}
 
 		if len(curSeq) >= 2 {
+			// add all single cards as a sequence too
 			seqs = append(seqs, curSeq)
+			slog.Info("adding sequence", "seq", game.EncodeSequence(curSeq))
 		}
+	}
+
+	// add individual cards as seqs
+	for _, card := range hand {
+		// do not get seqeunces of the wilds
+		if !card.IsWild(round) {
+			seqs = append(seqs, []game.Card{card})
+		}
+
 	}
 
 	return seqs
@@ -162,22 +179,23 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 	cardCounts := CardCounts(hand)
 
-	// TODO: treat round-specific card as a joker
-
-	for _, seq := range seqs {
-		// optimisation available: don't bother checking for card usage for first sequence
+	for i, seq := range seqs {
 
 		valid := true
 
-		// check all the cards are available
-		for _, card := range seq {
+		// TODO: if a sequence cannot be used, its subset should be added to the seqs
 
-			// TODO: edge case: same card used twice
-			if cardCounts[card] < 1 {
-				valid = false
-				break
+		// don't bother checking for card usage for first sequence
+		if i > 0 {
+
+			// check all the cards are available
+			for card, reqCount := range CardCounts(seq) {
+				if cardCounts[card] < reqCount {
+					valid = false
+					break
+				}
+
 			}
-
 		}
 
 		if !valid {
@@ -188,16 +206,21 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 		gap := 3 - len(seq)
 		if gap > 0 && wildCount(cardCounts, round) >= gap {
 			for range gap {
-				log.Println("add a wild to " + game.EncodeSequence(seq))
 
 				// fetch an available wild card
 				// decrement the wildcard after usage
 
 				// ignoring the err, we know there will be a wild available here
-				wc, _ := getWild(cardCounts, round)
-				seq = append(seq, wc)
+				wc, err := getWild(cardCounts, round)
+				slog.Info("add a wild to seq", "seq", game.EncodeSequence(seq), "wild", wc)
 
-				cardCounts[wc] -= gap
+				if err != nil {
+					// this should not occur
+					panic(err)
+				}
+
+				seq = append(seq, wc)
+				cardCounts[wc] -= 1
 			}
 		}
 
@@ -205,17 +228,31 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 		// decrement remaining cards which have been used
 		for _, card := range seq {
-			cardCounts[card] -= 1
+			// do not decrement wilds, they have been decremented as above
+			if !card.IsWild(round) {
+				cardCounts[card] -= 1
+			}
 		}
 	}
 
-	// TODO: if a joker is remaining, tack onto an existing sequence
+	slog.Info("remaining card counts", "counts", cardCounts)
 
-	// add the remaining cards which haven't been used
-	for card, count := range cardCounts {
-		if count > 0 {
-			filteredSeqs = append(filteredSeqs, []game.Card{card})
+	for {
+		wc, err := getWild(cardCounts, round)
+		if err != nil {
+			break
 		}
+
+		// place the remaining jokers in a sequence
+		if len(filteredSeqs) > 0 {
+			filteredSeqs[0] = append(filteredSeqs[0], wc)
+		} else {
+			// handle case when only wilds are in the hand
+			filteredSeqs = append(filteredSeqs, []game.Card{wc})
+		}
+
+		// decrement the wild
+		cardCounts[wc] -= 1
 	}
 
 	return filteredSeqs

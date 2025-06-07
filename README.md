@@ -92,7 +92,7 @@ Score is an action which can be used to test the engine. It is the same as 'disc
 - Uses wilds to rid of most # of cards
 
 
-### Wrinkle Brain Bot
+### Big Brain Bot
 - Builds sequences
 - Can split sequences to maximise card usage
 - Prefers sets to runs, especially in rounds 4, 5, 7, 8

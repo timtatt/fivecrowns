@@ -25,44 +25,12 @@ func TestGrugbot(t *testing.T) {
 			},
 		},
 		{
-			Hand:  "5-B:5-R:4-B:6-B:6-R:7-X:*",
+			Hand: "5-B:5-R:4-B:6-B:6-R:7-X:*",
 			Round: 7,
-			Expected: []string{
+			Expected: []string {
 				"4-B:5-B:6-B:7-X",
 				"5-R:6-R:*",
-			},
-		},
-		{
-			Hand:  "5-B:5-R:4-B:6-B:7-X:*:3-Y",
-			Round: 7,
-			Expected: []string{
-				"4-B:5-B:6-B",
-				"5-R:*:7-X",
-				"3-Y",
-			},
-		},
-		{
-			Hand:  "3-X:3-Y:3-B",
-			Round: 3,
-			Expected: []string{
-				"3-B:3-X:3-Y",
-			},
-		},
-		{
-			Hand:  "3-X:4-Y:4-B:4-R",
-			Round: 4,
-			Expected: []string{
-				"3-X:4-B:4-R:4-Y",
-			},
-		},
-		{
-			Hand:  "3-X:4-X:5-X:3-X:3-B",
-			Round: 6,
-			Expected: []string{
-				"3-X:4-X:5-X",
-				"3-B",
-				"3-X",
-			},
+			}
 		},
 	}
 
