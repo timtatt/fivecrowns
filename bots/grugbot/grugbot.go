@@ -26,31 +26,6 @@ type Calculation struct {
 	Hand      []game.Card
 }
 
-func (b *grugBot) Calculate(req bots.BotRequest) (Calculation, error) {
-	hand, err := game.DecodeCards(req.Hand)
-
-	if err != nil {
-		return Calculation{}, fmt.Errorf("unable to decode cards: %w", err)
-	}
-
-	// sort the cards by suite and number
-	slices.SortFunc(hand, game.CompareCard)
-
-	// find all possible sequences in the hand
-	seqs := FindSequences(req.Round, hand)
-
-	slog.Info("calculated possible sequences", "seqs", game.EncodeSequences(seqs))
-
-	// filter out sequences if they have cards that have been used twiced
-	// use the wilds to build more sequences
-	seqs = FilterSequences(req.Round, hand, seqs)
-
-	return Calculation{
-		Flop:      game.CanFlop(seqs),
-		Sequences: seqs,
-	}, nil
-}
-
 func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 
 	calculation, err := b.Calculate(req)
@@ -172,6 +147,32 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 		Sequences: game.EncodeSequences(calculation.Sequences),
 		Action:    bots.ActionDiscard,
 		Card:      worstCard.card.Encode(),
+	}, nil
+}
+
+// calculate best possible sequences
+func (b *grugBot) Calculate(req bots.BotRequest) (Calculation, error) {
+	hand, err := game.DecodeCards(req.Hand)
+
+	if err != nil {
+		return Calculation{}, fmt.Errorf("unable to decode cards: %w", err)
+	}
+
+	// sort the cards by suite and number
+	slices.SortFunc(hand, game.CompareCard)
+
+	// find all possible sequences in the hand
+	seqs := FindSequences(req.Round, hand)
+
+	slog.Info("calculated possible sequences", "seqs", game.EncodeSequences(seqs))
+
+	// filter out sequences if they have cards that have been used twiced
+	// use the wilds to build more sequences
+	seqs = FilterSequences(req.Round, hand, seqs)
+
+	return Calculation{
+		Flop:      game.CanFlop(seqs),
+		Sequences: seqs,
 	}, nil
 }
 
