@@ -55,3 +55,16 @@ func GetSequenceType(seq []Card, round int) SequenceType {
 
 	return SequenceTypeEither
 }
+
+func CanFlop(seqs [][]Card) bool {
+
+	canFlop := true
+
+	for _, seq := range seqs {
+		if len(seq) < 3 {
+			canFlop = false
+		}
+	}
+
+	return canFlop
+}

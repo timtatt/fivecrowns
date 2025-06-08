@@ -15,7 +15,7 @@ $(function () {
 
   $("#allCards").html(renderCards(deck));
 
-  $("#shuffle").on("click", function () {
+  $("#shuffle").on("click", async function () {
     const round = $("#round").val();
 
     const newHand = [];
@@ -29,6 +29,8 @@ $(function () {
     hand = newHand;
 
     render();
+
+    calculate();
   });
 
   $("#allCards").on("click", ".pcard", function (e) {
@@ -67,7 +69,7 @@ $(function () {
     render();
   });
 
-  $("#calculate").on("click", async function () {
+  async function calculate() {
     const action = $("#action").val();
     localStorage.setItem("action", action);
 
@@ -92,6 +94,10 @@ $(function () {
     console.log("received bot response", botResponse);
 
     renderBotResponse(botResponse);
+  }
+
+  $("#calculate").on("click", async function () {
+    await calculate();
   });
 
   function sequenceCodeToArray(sequenceCode) {

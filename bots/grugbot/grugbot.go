@@ -8,6 +8,7 @@ import (
 
 	"github.com/timtatt/fivecrowns/bots"
 	"github.com/timtatt/fivecrowns/game"
+	"github.com/timtatt/fivecrowns/math"
 )
 
 // Grugbot tries to put cards in the biggest possible sequences
@@ -32,19 +33,57 @@ func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 	// find all possible sequences in the hand
 	seqs := FindSequences(req.Round, hand)
 
+	slog.Info("calculated possible sequences", "seqs", game.EncodeSequences(seqs))
+
 	// filter out sequences if they have cards that have been used twiced
 	// use the wilds to build more sequences
 	seqs = FilterSequences(req.Round, hand, seqs)
 
 	return bots.ScoreResponse{
 		Action:    req.Action,
-		Flop:      false,
+		Flop:      game.CanFlop(seqs),
 		Sequences: game.EncodeSequences(seqs),
 	}, nil
 }
 
 func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
-	return bots.DrawResponse{}, errors.New("not implemented")
+
+	// add the discard to the hand and determine if it gets added to a valid sequence
+
+	topCard := req.Discard[0]
+
+	useDiscardScore, err := b.Score(bots.BotRequest{
+		Action:  req.Action,
+		Hand:    append(req.Hand, topCard),
+		Round:   req.Round,
+		Discard: req.Discard,
+	})
+
+	if err != nil {
+		return bots.DrawResponse{}, fmt.Errorf("unable to hypothesise discard score: %w", err)
+	}
+
+	// determine if the topCard has been used in a sequence
+	// goes in reverse and checks if there is an invalid sequence with only the topCard
+	for i := len(useDiscardScore.Sequences) - 1; i >= 0; i-- {
+		// available optimisation: if sequences are now valid, the top card will be there somewhere. we don't need to know where
+		if len(useDiscardScore.Sequences[i]) >= 3 {
+			return bots.DrawResponse{
+				Action: req.Action,
+				Stack:  bots.StackDiscard,
+			}, nil
+		}
+
+		// these sequences are invalid
+		if slices.Contains(useDiscardScore.Sequences[i], topCard) {
+			return bots.DrawResponse{
+				Action: req.Action,
+				Stack:  bots.StackDeck,
+			}, nil
+		}
+	}
+
+	return bots.DrawResponse{}, errors.New("did not find the top card in the sequences")
 }
 
 func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
@@ -154,6 +193,17 @@ func FindSequences(round int, hand []game.Card) [][]game.Card {
 	return seqs
 }
 
+func CompareSequence(a, b []game.Card) int {
+
+	if len(a) < 3 && len(b) >= 3 {
+		return 1
+	} else if len(a) >= 3 && len(b) < 3 {
+		return -1
+	} else {
+		return game.ScoreSequence(b) - game.ScoreSequence(a)
+	}
+}
+
 // takes a hand and a list of sequences
 // determines if any card is being used more than it should be
 // if so, will chose the sequence with the highest score
@@ -162,47 +212,71 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 	// score all of the sequences
 
-	slices.SortFunc(seqs, func(a, b []game.Card) int {
-
-		if len(a) < 3 && len(b) >= 3 {
-			return 1
-		} else if len(a) >= 3 && len(b) < 3 {
-			return -1
-		} else {
-			return game.ScoreSequence(b) - game.ScoreSequence(a)
-		}
-	})
+	slices.SortFunc(seqs, CompareSequence)
 
 	slog.Info("sorting by sequence scores", "seqs", game.EncodeSequences(seqs))
 
-	filteredSeqs := make([][]game.Card, 0)
-
 	cardCounts := CardCounts(hand)
 
-	for i, seq := range seqs {
+	// keeps track of which sequences we can still try out
+	remainingSeqs := slices.Clone(seqs)
 
-		valid := true
+	filteredSeqs := make([][]game.Card, 0)
+
+	z := 0
+
+	for len(remainingSeqs) > 0 {
+
+		// remainingSeqs will always be sorted by score
+		// always use the top sequence
+		seq := remainingSeqs[0]
+
+		z += 1
+
+		if z == 100 {
+			slog.Info("infinite loop", "filteredSeqs", game.EncodeSequences(filteredSeqs), "remainingSeqs", game.EncodeSequences(remainingSeqs))
+			panic("infinite loop")
+		}
+
+		if len(seq) == 0 {
+			slog.Info("empty sequence found", "filteredSeqs", game.EncodeSequences(filteredSeqs), "remainingSeqs", game.EncodeSequences(remainingSeqs))
+			panic("empty sequence found")
+		}
 
 		// TODO: if a sequence cannot be used, its subset should be added to the seqs
 
-		// don't bother checking for card usage for first sequence
-		if i > 0 {
+		// available optimisation: don't bother checking for card usage for first sequence
+		if len(filteredSeqs) != 0 {
 
 			// check all the cards are available
+			availableCards := make([]game.Card, 0)
 			for card, reqCount := range CardCounts(seq) {
-				if cardCounts[card] < reqCount {
-					valid = false
-					break
+				for range math.Min(reqCount, cardCounts[card]) {
+					availableCards = append(availableCards, card)
 				}
+			}
 
+			if len(availableCards) == 0 {
+				// if there are no cards available, we need to remove this as a possible sequence
+				remainingSeqs = slices.Delete(remainingSeqs, 0, 1)
+
+				continue
+			} else if len(availableCards) != len(seq) {
+				slog.Info("missing cards to build sequence", "needs", game.EncodeCards(seq), "available", game.EncodeCards(availableCards))
+				// there are some missing cards, this seq cannot be used as is
+
+				// add this remaining seq back into the remainingSeqs
+				slices.SortFunc(availableCards, game.CompareCard)
+				remainingSeqs[0] = availableCards
+
+				// resort the remainingSeqs
+				slices.SortFunc(remainingSeqs, CompareSequence)
+
+				continue
 			}
 		}
 
-		if !valid {
-			continue
-		}
-
-		// add jokers to the sequence if the sequence is < 3
+		// add jokers to the sequence if the sequence is < 3 cards in length
 		gap := 3 - len(seq)
 		if gap > 0 && wildCount(cardCounts, round) >= gap {
 			for range gap {
@@ -233,6 +307,9 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 				cardCounts[card] -= 1
 			}
 		}
+
+		// remove the sequence from remaining seqs
+		remainingSeqs = slices.Delete(remainingSeqs, 0, 1)
 	}
 
 	slog.Info("remaining card counts", "counts", cardCounts)
