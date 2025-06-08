@@ -235,15 +235,8 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 		if z == 100 {
 			slog.Info("infinite loop", "filteredSeqs", game.EncodeSequences(filteredSeqs), "remainingSeqs", game.EncodeSequences(remainingSeqs))
-			panic("infinite loop")
+			panic("infinite loop detected")
 		}
-
-		if len(seq) == 0 {
-			slog.Info("empty sequence found", "filteredSeqs", game.EncodeSequences(filteredSeqs), "remainingSeqs", game.EncodeSequences(remainingSeqs))
-			panic("empty sequence found")
-		}
-
-		// TODO: if a sequence cannot be used, its subset should be added to the seqs
 
 		// available optimisation: don't bother checking for card usage for first sequence
 		if len(filteredSeqs) != 0 {
