@@ -20,11 +20,17 @@ func NewGrugBot() bots.Bot {
 	return &grugBot{}
 }
 
-func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
+type Calculation struct {
+	Sequences [][]game.Card
+	Flop      bool
+	Hand      []game.Card
+}
+
+func (b *grugBot) Calculate(req bots.BotRequest) (Calculation, error) {
 	hand, err := game.DecodeCards(req.Hand)
 
 	if err != nil {
-		return bots.ScoreResponse{}, fmt.Errorf("unable to decode cards: %w", err)
+		return Calculation{}, fmt.Errorf("unable to decode cards: %w", err)
 	}
 
 	// sort the cards by suite and number
@@ -39,10 +45,24 @@ func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 	// use the wilds to build more sequences
 	seqs = FilterSequences(req.Round, hand, seqs)
 
+	return Calculation{
+		Flop:      game.CanFlop(seqs),
+		Sequences: seqs,
+	}, nil
+}
+
+func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
+
+	calculation, err := b.Calculate(req)
+
+	if err != nil {
+		return bots.ScoreResponse{}, fmt.Errorf("cannot calculate response: %w", err)
+	}
+
 	return bots.ScoreResponse{
 		Action:    req.Action,
-		Flop:      game.CanFlop(seqs),
-		Sequences: game.EncodeSequences(seqs),
+		Flop:      game.CanFlop(calculation.Sequences),
+		Sequences: game.EncodeSequences(calculation.Sequences),
 	}, nil
 }
 
@@ -50,11 +70,15 @@ func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 
 	// add the discard to the hand and determine if it gets added to a valid sequence
 
-	topCard := req.Discard[0]
+	topCard, err := game.DecodeCard(req.Discard[0])
 
-	useDiscardScore, err := b.Score(bots.BotRequest{
+	if err != nil {
+		return bots.DrawResponse{}, fmt.Errorf("unable to decode discard card: %w", err)
+	}
+
+	hypothetical, err := b.Calculate(bots.BotRequest{
 		Action:  req.Action,
-		Hand:    append(req.Hand, topCard),
+		Hand:    append(req.Hand, req.Discard[0]),
 		Round:   req.Round,
 		Discard: req.Discard,
 	})
@@ -65,9 +89,9 @@ func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 
 	// determine if the topCard has been used in a sequence
 	// goes in reverse and checks if there is an invalid sequence with only the topCard
-	for i := len(useDiscardScore.Sequences) - 1; i >= 0; i-- {
+	for i := len(hypothetical.Sequences) - 1; i >= 0; i-- {
 		// available optimisation: if sequences are now valid, the top card will be there somewhere. we don't need to know where
-		if len(useDiscardScore.Sequences[i]) >= 3 {
+		if len(hypothetical.Sequences[i]) >= 3 {
 			return bots.DrawResponse{
 				Action: req.Action,
 				Stack:  bots.StackDiscard,
@@ -75,7 +99,7 @@ func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 		}
 
 		// these sequences are invalid
-		if slices.Contains(useDiscardScore.Sequences[i], topCard) {
+		if slices.Contains(hypothetical.Sequences[i], topCard) {
 			return bots.DrawResponse{
 				Action: req.Action,
 				Stack:  bots.StackDeck,
@@ -87,7 +111,68 @@ func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 }
 
 func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
-	return bots.DiscardResponse{}, errors.New("not implemented")
+
+	calculation, err := b.Calculate(req)
+
+	if err != nil {
+		return bots.DiscardResponse{}, fmt.Errorf("unable to calculate score: %w", err)
+	}
+
+	// determine which card is the highest one that is not in a valid sequence
+
+	// save the card and its location to easily remove it in the future
+	type cardAndLocation struct {
+		card        game.Card
+		sequenceIdx int
+		cardIdx     int
+	}
+
+	var worstCard cardAndLocation
+
+	for i := len(calculation.Sequences) - 1; i >= 1; i-- {
+		seq := calculation.Sequences[i]
+
+		// if it is the last turn, we just want to throw out our highest card, even if it is in a partial sequence
+		threshold := 2
+		if req.LastTurn {
+			threshold = 3
+		}
+
+		// exit if the seqs are now valid
+		if len(seq) >= threshold {
+			break
+		}
+
+		// get the highest card in the current sequence
+		for j, card := range seq {
+			if game.ScoreCard(card) > game.ScoreCard(worstCard.card) {
+				worstCard = cardAndLocation{
+					card:        card,
+					sequenceIdx: i,
+					cardIdx:     j,
+				}
+			}
+		}
+	}
+
+	// update the discard response to omit the discarded card
+
+	seq := calculation.Sequences[worstCard.sequenceIdx]
+
+	if len(seq) == 1 {
+		// the sequence only has one card, delete the whole thing
+		calculation.Sequences = slices.Delete(calculation.Sequences, worstCard.sequenceIdx, worstCard.sequenceIdx+1)
+	} else {
+		// remove the card from the its sequence
+		calculation.Sequences[worstCard.sequenceIdx] = slices.Delete(calculation.Sequences[worstCard.sequenceIdx], worstCard.cardIdx, worstCard.cardIdx+1)
+	}
+
+	return bots.DiscardResponse{
+		Flop:      game.CanFlop(calculation.Sequences),
+		Sequences: game.EncodeSequences(calculation.Sequences),
+		Action:    bots.ActionDiscard,
+		Card:      worstCard.card.Encode(),
+	}, nil
 }
 
 // takes a list of cards and returns a map with the counts of each card
@@ -193,15 +278,40 @@ func FindSequences(round int, hand []game.Card) [][]game.Card {
 	return seqs
 }
 
-func CompareSequence(a, b []game.Card) int {
+func CompareSequence(round int) func(a, b []game.Card) int {
+	return func(a, b []game.Card) int {
+		// sorts in reverse to optimise the sequence processing
 
-	if len(a) < 3 && len(b) >= 3 {
-		return 1
-	} else if len(a) >= 3 && len(b) < 3 {
-		return -1
-	} else {
-		return game.ScoreSequence(b) - game.ScoreSequence(a)
+		// 1 = prefer a
+		// -1 = prefer b
+
+		if len(a) < 3 && len(b) >= 3 {
+			return -1
+		} else if len(a) >= 3 && len(b) < 3 {
+			return 1
+		}
+
+		scoreDiff := game.ScoreSequence(a) - game.ScoreSequence(b)
+
+		if scoreDiff != 0 {
+			return scoreDiff
+		}
+
+		// prefer sets to runs, when everything else is equal
+		aType := game.GetSequenceType(a, round)
+		bType := game.GetSequenceType(b, round)
+
+		if aType == bType {
+			return 0
+		} else if aType == game.SequenceTypeRun {
+			return -1
+		} else if bType == game.SequenceTypeRun {
+			return 1
+		}
+
+		return 0
 	}
+
 }
 
 // takes a hand and a list of sequences
@@ -212,7 +322,7 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 	// score all of the sequences
 
-	slices.SortFunc(seqs, CompareSequence)
+	slices.SortFunc(seqs, CompareSequence(round))
 
 	slog.Info("sorting by sequence scores", "seqs", game.EncodeSequences(seqs))
 
@@ -226,10 +336,11 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 	z := 0
 
 	for len(remainingSeqs) > 0 {
+		lastIdx := len(remainingSeqs) - 1
 
 		// remainingSeqs will always be sorted by score
-		// always use the top sequence
-		seq := remainingSeqs[0]
+		// always use the top sequence (which is at the end)
+		seq := remainingSeqs[lastIdx]
 
 		z += 1
 
@@ -251,7 +362,7 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 			if len(availableCards) == 0 {
 				// if there are no cards available, we need to remove this as a possible sequence
-				remainingSeqs = slices.Delete(remainingSeqs, 0, 1)
+				remainingSeqs = slices.Delete(remainingSeqs, lastIdx, lastIdx+1)
 
 				continue
 			} else if len(availableCards) != len(seq) {
@@ -260,10 +371,10 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 
 				// add this remaining seq back into the remainingSeqs
 				slices.SortFunc(availableCards, game.CompareCard)
-				remainingSeqs[0] = availableCards
+				remainingSeqs[lastIdx] = availableCards
 
 				// resort the remainingSeqs
-				slices.SortFunc(remainingSeqs, CompareSequence)
+				slices.SortFunc(remainingSeqs, CompareSequence(round))
 
 				continue
 			}
@@ -302,7 +413,7 @@ func FilterSequences(round int, hand []game.Card, seqs [][]game.Card) [][]game.C
 		}
 
 		// remove the sequence from remaining seqs
-		remainingSeqs = slices.Delete(remainingSeqs, 0, 1)
+		remainingSeqs = slices.Delete(remainingSeqs, lastIdx, lastIdx+1)
 	}
 
 	slog.Info("remaining card counts", "counts", cardCounts)

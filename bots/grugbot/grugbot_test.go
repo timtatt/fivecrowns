@@ -67,9 +67,9 @@ func TestGrugbotScore(t *testing.T) {
 			Hand:  "5-B:5-R:4-B:6-B:7-X:5-Y:6-G",
 			Round: 7,
 			Expected: []string{
-				"4-B:5-B:6-B",
-				"5-R:5-Y:7-X",
-				"6-G",
+				"5-B:5-R:5-Y",
+				"6-B:6-G:7-X",
+				"4-B",
 			},
 		},
 	}

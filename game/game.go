@@ -21,6 +21,10 @@ var (
 	CardJoker = Card{Joker: true}
 )
 
+func (c Card) IsNil() bool {
+	return !c.Joker && c.Number == 0 && c.Suite == 0
+}
+
 func (c Card) IsWild(round int) bool {
 	return c.Joker || c.Number == round
 }
@@ -38,7 +42,7 @@ var (
 func GetSequenceType(seq []Card, round int) SequenceType {
 	c1 := -1
 
-	for i := 0; i < len(seq); i++ {
+	for i := range seq {
 
 		if seq[i].IsWild(round) {
 			continue
