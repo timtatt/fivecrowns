@@ -104,7 +104,7 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 
 	var worstCard cardAndLocation
 
-	for i := len(calculation.Sequences) - 1; i >= 1; i-- {
+	for i := len(calculation.Sequences) - 1; i >= 0; i-- {
 		seq := calculation.Sequences[i]
 
 		// if it is the last turn, we just want to throw out our highest card, even if it is in a partial sequence
@@ -113,9 +113,9 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 			threshold = 3
 		}
 
-		// exit if the seqs are now valid
+		// skip seq if above keeping threshold
 		if len(seq) >= threshold {
-			break
+			continue
 		}
 
 		// get the highest card in the current sequence
@@ -129,6 +129,30 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 			}
 		}
 	}
+
+	// if the hand can flop without discarding, a random card will need to be chosen to be omitted
+	// TODO: edge case for round 5,8,11 which may break a sequence
+	// TODO: for round 5,8,11 if a sequence is broken, ensure it is the least troublesome
+	if worstCard.card.IsNil() {
+		for i, seq := range calculation.Sequences {
+			if len(seq) > 3 {
+				// remove first a non-wild card
+				for j, card := range seq {
+					if !card.IsWild(req.Round) {
+						worstCard = cardAndLocation{
+							card:        card,
+							sequenceIdx: i,
+							cardIdx:     j,
+						}
+
+						break
+					}
+				}
+			}
+		}
+	}
+
+	slog.Info("worst card detected", "card", worstCard)
 
 	// update the discard response to omit the discarded card
 
@@ -237,7 +261,7 @@ func FindSequences(round int, hand []game.Card) [][]game.Card {
 	slog.Info("card counts in hand", "hand", cardCounts)
 
 	// check the cards for sets
-	for number := 3; number < 13; number++ {
+	for number := 3; number <= 13; number++ {
 
 		// do not get a collection set of wilds
 		if number == round {

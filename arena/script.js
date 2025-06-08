@@ -15,6 +15,8 @@ $(function () {
 
   $("#allCards").html(renderCards(deck));
 
+  calculate();
+
   $("#shuffle").on("click", async function () {
     const round = $("#round").val();
 
@@ -85,7 +87,7 @@ $(function () {
         lastTurn: false,
         newestCard: "",
         hand,
-        round: hand.length,
+        round: hand.length - (action === "discard" ? 1 : 0),
       }),
     });
 

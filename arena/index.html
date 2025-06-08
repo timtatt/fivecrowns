@@ -33,18 +33,9 @@
         <div class="col col-8">
           <div class="hand mb-4" id="hand"></div>
           <div class="row">
-            <div class="col col-auto">
-              <button
-                class="btn d-block btn-outline-secondary"
-                type="button"
-                id="shuffle"
-              >
-                Shuffle
-              </button>
-            </div>
             <div class="col col-3">
               <div class="input-group mb-3">
-                <span class="input-group-text" id="basic-addon1">Round</span>
+                <span class="input-group-text" id="basic-addon1">Cards</span>
                 <input
                   type="number"
                   class="form-control"
@@ -52,6 +43,13 @@
                   id="round"
                   max="13"
                 />
+                <button
+                  class="btn d-block btn-outline-secondary"
+                  type="button"
+                  id="shuffle"
+                >
+                  Shuffle
+                </button>
               </div>
             </div>
             <div class="col">
@@ -110,19 +108,12 @@
               <h6
                 id="botResponseSummary"
                 class="card-subtitle text-body-secondary"
-              >
-                Score: 20, Discarded: 10-R
-              </h6>
+              ></h6>
             </div>
-            <ul class="list-group list-group-flush" id="botResponseSequences">
-              <li class="list-group-item">
-                <div class="hand">
-                  <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                  <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                  <div class="pcard pcard-sm pcard-b pcard-10"></div>
-                </div>
-              </li>
-            </ul>
+            <ul
+              class="list-group list-group-flush"
+              id="botResponseSequences"
+            ></ul>
           </div>
         </div>
       </div>

@@ -72,6 +72,16 @@ func TestGrugbotScore(t *testing.T) {
 				"4-B",
 			},
 		},
+		{
+			Hand:  "6-Y:13-B:4-X:13-Y:3-X:7-B:8-X",
+			Round: 7,
+			Expected: []string{
+				"13-B:13-Y:7-B",
+				"8-X",
+				"3-X:4-X",
+				"6-Y",
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -134,6 +144,52 @@ func TestGrugbotDraw(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.Expected, res.Stack)
+
+		})
+
+	}
+
+}
+
+func TestGrugbotDiscard(t *testing.T) {
+
+	cases := []struct {
+		Hand     string
+		Round    int
+		Expected string
+	}{
+		{
+			Hand:     "*:12-R:3-B:11-B:5-B:3-R:11-R:4-Y",
+			Round:    7,
+			Expected: "11-B",
+		},
+		{
+			Hand:     "5-X:3-B:5-R:9-Y:13-B:11-X:6-Y",
+			Round:    7,
+			Expected: "13-B",
+		},
+		{
+			Hand:     "4-G:7-R:7-X:8-R:7-B:4-R:*",
+			Round:    7,
+			Expected: "8-R",
+		},
+	}
+
+	for _, tc := range cases {
+
+		gb := NewGrugBot()
+
+		t.Run("test best stack to draw from hand: "+tc.Hand, func(t *testing.T) {
+			hand := strings.Split(tc.Hand, ":")
+
+			res, err := gb.Discard(bots.BotRequest{
+				Action: bots.ActionScore,
+				Hand:   hand,
+				Round:  tc.Round,
+			})
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.Expected, res.Card)
 
 		})
 
