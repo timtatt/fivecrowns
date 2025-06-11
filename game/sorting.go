@@ -14,3 +14,7 @@ func CompareCard(c1, c2 Card) int {
 		return int(c1.Suite) - int(c2.Suite)
 	}
 }
+
+func CompareCardScore(c1, c2 Card) int {
+	return ScoreCard(c1) - ScoreCard(c2)
+}

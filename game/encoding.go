@@ -121,6 +121,21 @@ func DecodeSequence(s string) ([]Card, error) {
 	return seq, errs
 }
 
+func DecodeSequences(s []string) ([][]Card, error) {
+
+	seqs := make([][]Card, len(s))
+
+	var errs error
+	for i, seq := range s {
+		res, err := DecodeSequence(seq)
+
+		seqs[i] = res
+		errs = errors.Join(errs, err)
+	}
+
+	return seqs, errs
+}
+
 func DecodeCards(cards []string) ([]Card, error) {
 	seq := make([]Card, len(cards))
 

@@ -94,68 +94,11 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 	}
 
 	// determine which card is the highest one that is not in a valid sequence
-
-	// save the card and its location to easily remove it in the future
-	type cardAndLocation struct {
-		card        game.Card
-		sequenceIdx int
-		cardIdx     int
-	}
-
-	var worstCard cardAndLocation
-
-	for i := len(calculation.Sequences) - 1; i >= 0; i-- {
-		seq := calculation.Sequences[i]
-
-		// if it is the last turn, we just want to throw out our highest card, even if it is in a partial sequence
-		threshold := 2
-		if req.LastTurn {
-			threshold = 3
-		}
-
-		// skip seq if above keeping threshold
-		if len(seq) >= threshold {
-			continue
-		}
-
-		// get the highest card in the current sequence
-		for j, card := range seq {
-			if game.ScoreCard(card) > game.ScoreCard(worstCard.card) {
-				worstCard = cardAndLocation{
-					card:        card,
-					sequenceIdx: i,
-					cardIdx:     j,
-				}
-			}
-		}
-	}
-
-	// if the hand can flop without discarding, a random card will need to be chosen to be omitted
-	// TODO: edge case for round 5,8,11 which may break a sequence
-	// TODO: for round 5,8,11 if a sequence is broken, ensure it is the least troublesome
-	if worstCard.card.IsNil() {
-		for i, seq := range calculation.Sequences {
-			if len(seq) > 3 {
-				// remove first a non-wild card
-				for j, card := range seq {
-					if !card.IsWild(req.Round) {
-						worstCard = cardAndLocation{
-							card:        card,
-							sequenceIdx: i,
-							cardIdx:     j,
-						}
-
-						break
-					}
-				}
-			}
-		}
-	}
+	worstCard := WorstCard(req.Round, calculation.Sequences, req.LastTurn)
 
 	slog.Info("worst card detected", "card", worstCard)
 
 	// update the discard response to omit the discarded card
-
 	seq := calculation.Sequences[worstCard.sequenceIdx]
 
 	if len(seq) == 1 {
@@ -209,6 +152,96 @@ func CardCounts(hand []game.Card) map[game.Card]int {
 	}
 
 	return cardCounts
+}
+
+type CardAndLocation struct {
+	card        game.Card
+	sequenceIdx int
+	cardIdx     int
+}
+
+func WorstCard(round int, seqs [][]game.Card, lastTurn bool) CardAndLocation {
+
+	// save the card and its location to easily remove it in the future
+	var worstCard CardAndLocation
+
+	for i := len(seqs) - 1; i >= 0; i-- {
+		seq := seqs[i]
+
+		// if it is the last turn, we just want to throw out our highest card, even if it is in a partial sequence
+		threshold := 2
+		if lastTurn {
+			threshold = 3
+		}
+
+		// skip seq if above keeping threshold
+		if len(seq) >= threshold {
+			continue
+		}
+
+		// get the highest card in the current sequence
+		for j, card := range seq {
+			if game.ScoreCard(card) > game.ScoreCard(worstCard.card) {
+				worstCard = CardAndLocation{
+					card:        card,
+					sequenceIdx: i,
+					cardIdx:     j,
+				}
+			}
+		}
+	}
+
+	if !worstCard.card.IsNil() {
+		return worstCard
+	}
+
+	// if the hand can flop without discarding, a random card will need to be chosen to be omitted
+	for i, seq := range seqs {
+		if len(seq) <= 3 {
+			// don't discard from a complete sequence which will break the sequence
+			continue
+		}
+
+		// remove first a non-wild card
+		for j, card := range seq {
+			if !card.IsWild(round) {
+				return CardAndLocation{
+					card:        card,
+					sequenceIdx: i,
+					cardIdx:     j,
+				}
+			}
+		}
+	}
+
+	// if we still haven't thrown out a card it means we need to break a sequence
+	// assuming that the sequences are sorted, we will select the highest card from the last sequence
+
+	smallestSeq := seqs[len(seqs)-1]
+
+	for i, card := range smallestSeq {
+		if !card.IsWild(round) {
+			worstCard = CardAndLocation{
+				card:        card,
+				sequenceIdx: len(seqs) - 1,
+				cardIdx:     i,
+			}
+		}
+	}
+
+	// if the smallest card still isn't picked, the smallest seq is a collection of wilds
+	if worstCard.card.IsNil() {
+		worstCard = CardAndLocation{
+			card:        smallestSeq[0],
+			sequenceIdx: len(seqs) - 1,
+			cardIdx:     0,
+		}
+	}
+
+	// TODO: if a sequence is broken, the cards from that sequence should be redistributed. this would be out of scope of grugbot
+
+	return worstCard
+
 }
 
 // takes a sorted list of cards and returns a list of possible sequences

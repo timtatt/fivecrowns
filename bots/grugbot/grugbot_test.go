@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/timtatt/fivecrowns/bots"
 	"github.com/timtatt/fivecrowns/game"
 )
@@ -193,6 +194,76 @@ func TestGrugbotDiscard(t *testing.T) {
 
 		})
 
+	}
+
+}
+
+func TestGrugbotWorstCard(t *testing.T) {
+
+	cases := []struct {
+		Sequences []string
+		Round     int
+		LastTurn  bool
+		Expected  string
+	}{
+		{
+			Sequences: []string{
+				"8-X:9-X:10-X",
+				"8-Y",
+			},
+			Round:    4,
+			LastTurn: false,
+			Expected: "8-Y",
+		},
+		{
+			Sequences: []string{
+				"8-X:9-X:10-X",
+				"8-Y:10-Y",
+				"7-R",
+			},
+			Round:    6,
+			LastTurn: false,
+			Expected: "7-R",
+		},
+		{
+			Sequences: []string{
+				"8-X:9-X:10-X",
+				"8-Y:10-Y",
+				"7-R",
+			},
+			Round:    6,
+			LastTurn: true,
+			Expected: "10-Y",
+		},
+		{
+			Sequences: []string{
+				"3-R:3-Y:3-X",
+			},
+			Round:    3,
+			LastTurn: true,
+			Expected: "3-R",
+		},
+		{
+			Sequences: []string{
+				"8-X:9-X:10-X",
+				"3-R:4-R:5-R",
+			},
+			Round:    6,
+			LastTurn: false,
+			Expected: "5-R",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run("test worst card selection", func(t *testing.T) {
+			seqs, err := game.DecodeSequences(tc.Sequences)
+
+			require.NoError(t, err)
+
+			res := WorstCard(tc.Round, seqs, tc.LastTurn)
+
+			assert.Equal(t, tc.Expected, res.card.Encode())
+		})
 	}
 
 }
