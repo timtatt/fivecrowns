@@ -234,11 +234,17 @@ func FindSequences(round int, hand []game.Card) [][]game.Card {
 			continue
 		}
 
+		// check if cards are sequential or have a single gap
 		if c.Suite == pc.Suite && c.Number == pc.Number+1 {
 			// cards are in sequence, add this one to the sequence
 			curSeq = append(curSeq, c)
 		} else {
-			// cards are not in a run
+			// cards are not in a complete run
+
+			if c.Suite == pc.Suite && c.Number == pc.Number+2 && len(curSeq) == 1 {
+				// if the sequence has a gap, save if length is < 2
+				curSeq = append(curSeq, c)
+			}
 
 			// save the sequence if it qualifies
 			if len(curSeq) >= 2 {
