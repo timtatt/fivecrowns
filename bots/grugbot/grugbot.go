@@ -28,7 +28,7 @@ type Calculation struct {
 
 func (b *grugBot) Score(req bots.BotRequest) (bots.ScoreResponse, error) {
 
-	calculation, err := b.Calculate(req)
+	calculation, err := Calculate(req)
 
 	if err != nil {
 		return bots.ScoreResponse{}, fmt.Errorf("cannot calculate response: %w", err)
@@ -51,7 +51,7 @@ func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 		return bots.DrawResponse{}, fmt.Errorf("unable to decode discard card: %w", err)
 	}
 
-	hypothetical, err := b.Calculate(bots.BotRequest{
+	hypothetical, err := Calculate(bots.BotRequest{
 		Action:  req.Action,
 		Hand:    append(req.Hand, req.Discard[0]),
 		Round:   req.Round,
@@ -87,7 +87,7 @@ func (b *grugBot) Draw(req bots.BotRequest) (bots.DrawResponse, error) {
 
 func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 
-	calculation, err := b.Calculate(req)
+	calculation, err := Calculate(req)
 
 	if err != nil {
 		return bots.DiscardResponse{}, fmt.Errorf("unable to calculate score: %w", err)
@@ -99,26 +99,26 @@ func (b *grugBot) Discard(req bots.BotRequest) (bots.DiscardResponse, error) {
 	slog.Info("worst card detected", "card", worstCard)
 
 	// update the discard response to omit the discarded card
-	seq := calculation.Sequences[worstCard.sequenceIdx]
+	seq := calculation.Sequences[worstCard.SequenceIdx]
 
 	if len(seq) == 1 {
 		// the sequence only has one card, delete the whole thing
-		calculation.Sequences = slices.Delete(calculation.Sequences, worstCard.sequenceIdx, worstCard.sequenceIdx+1)
+		calculation.Sequences = slices.Delete(calculation.Sequences, worstCard.SequenceIdx, worstCard.SequenceIdx+1)
 	} else {
 		// remove the card from the its sequence
-		calculation.Sequences[worstCard.sequenceIdx] = slices.Delete(calculation.Sequences[worstCard.sequenceIdx], worstCard.cardIdx, worstCard.cardIdx+1)
+		calculation.Sequences[worstCard.SequenceIdx] = slices.Delete(calculation.Sequences[worstCard.SequenceIdx], worstCard.CardIdx, worstCard.CardIdx+1)
 	}
 
 	return bots.DiscardResponse{
 		Flop:      game.CanFlop(calculation.Sequences),
 		Sequences: game.EncodeSequences(calculation.Sequences),
 		Action:    bots.ActionDiscard,
-		Card:      worstCard.card.Encode(),
+		Card:      worstCard.Card.Encode(),
 	}, nil
 }
 
 // calculate best possible sequences
-func (b *grugBot) Calculate(req bots.BotRequest) (Calculation, error) {
+func Calculate(req bots.BotRequest) (Calculation, error) {
 	hand, err := game.DecodeCards(req.Hand)
 
 	if err != nil {
@@ -155,9 +155,9 @@ func CardCounts(hand []game.Card) map[game.Card]int {
 }
 
 type CardAndLocation struct {
-	card        game.Card
-	sequenceIdx int
-	cardIdx     int
+	Card        game.Card
+	SequenceIdx int
+	CardIdx     int
 }
 
 func WorstCard(round int, seqs [][]game.Card, lastTurn bool) CardAndLocation {
@@ -181,17 +181,17 @@ func WorstCard(round int, seqs [][]game.Card, lastTurn bool) CardAndLocation {
 
 		// get the highest card in the current sequence
 		for j, card := range seq {
-			if game.ScoreCard(card) > game.ScoreCard(worstCard.card) {
+			if game.ScoreCard(card) > game.ScoreCard(worstCard.Card) {
 				worstCard = CardAndLocation{
-					card:        card,
-					sequenceIdx: i,
-					cardIdx:     j,
+					Card:        card,
+					SequenceIdx: i,
+					CardIdx:     j,
 				}
 			}
 		}
 	}
 
-	if !worstCard.card.IsNil() {
+	if !worstCard.Card.IsNil() {
 		return worstCard
 	}
 
@@ -206,9 +206,9 @@ func WorstCard(round int, seqs [][]game.Card, lastTurn bool) CardAndLocation {
 		for j, card := range seq {
 			if !card.IsWild(round) {
 				return CardAndLocation{
-					card:        card,
-					sequenceIdx: i,
-					cardIdx:     j,
+					Card:        card,
+					SequenceIdx: i,
+					CardIdx:     j,
 				}
 			}
 		}
@@ -222,19 +222,19 @@ func WorstCard(round int, seqs [][]game.Card, lastTurn bool) CardAndLocation {
 	for i, card := range smallestSeq {
 		if !card.IsWild(round) {
 			worstCard = CardAndLocation{
-				card:        card,
-				sequenceIdx: len(seqs) - 1,
-				cardIdx:     i,
+				Card:        card,
+				SequenceIdx: len(seqs) - 1,
+				CardIdx:     i,
 			}
 		}
 	}
 
 	// if the smallest card still isn't picked, the smallest seq is a collection of wilds
-	if worstCard.card.IsNil() {
+	if worstCard.Card.IsNil() {
 		worstCard = CardAndLocation{
-			card:        smallestSeq[0],
-			sequenceIdx: len(seqs) - 1,
-			cardIdx:     0,
+			Card:        smallestSeq[0],
+			SequenceIdx: len(seqs) - 1,
+			CardIdx:     0,
 		}
 	}
 

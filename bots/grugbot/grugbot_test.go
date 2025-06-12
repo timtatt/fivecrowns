@@ -262,7 +262,7 @@ func TestGrugbotWorstCard(t *testing.T) {
 
 			res := WorstCard(tc.Round, seqs, tc.LastTurn)
 
-			assert.Equal(t, tc.Expected, res.card.Encode())
+			assert.Equal(t, tc.Expected, res.Card.Encode())
 		})
 	}
 

@@ -78,7 +78,7 @@ $(function () {
     const discard = $("#discard").val();
     localStorage.setItem("discard", discard);
 
-    const response = await fetch("http://localhost:3000/bots/grugbot", {
+    const response = await fetch("http://localhost:3000/bots/bigbrainbot", {
       method: "POST",
       body: JSON.stringify({
         action,

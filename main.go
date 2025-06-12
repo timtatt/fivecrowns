@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/timtatt/fivecrowns/bots"
+	"github.com/timtatt/fivecrowns/bots/bigbrainbot"
 	"github.com/timtatt/fivecrowns/bots/grugbot"
 	"github.com/timtatt/fivecrowns/bots/smoothbrainbot"
 )
@@ -42,6 +43,7 @@ func configureBots(mux *http.ServeMux) {
 	b := map[string]bots.Bot{
 		"smoothbrainbot": smoothbrainbot.NewSmoothBrainBot(),
 		"grugbot":        grugbot.NewGrugBot(),
+		"bigbrainbot":    bigbrainbot.NewBigBrainBot(),
 	}
 
 	for botName, bot := range b {
